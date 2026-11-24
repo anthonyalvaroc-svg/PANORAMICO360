@@ -4,75 +4,172 @@
 <meta charset="UTF-8">
 <title>Panorama Stitcher & Diagrama 360°</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #121212; color: #eee; margin: 0; }
-  .tabs { display: flex; background: #1f1f1f; border-bottom: 2px solid #2b78e4; }
-  .tab { padding: 12px 18px; cursor: pointer; border: none; background: none; color: #aaa; font-weight: bold; }
-  .tab.active { background: #2b78e4; color: white; }
-  .content { display: none; padding: 20px; }
-  .content.active { display: block; }
-  button.action { background: #2b78e4; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 15px; border-radius: 4px; }
-  #canvas2d { max-width: 100%; border: 1px solid #444; margin-top: 10px; }
-  #viewer360 { width: 100%; height: 480px; background: #000; border: 1px solid #444; cursor: grab; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #121212;
+    color: #f0f0f0;
+    margin: 0;
+    padding: 25px;
+    font-size: 20px;
+  }
+  h1 { font-size: 32px; color: #4da3ff; margin-top: 0; }
+  h2 { font-size: 26px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  .panel {
+    background: #1e1e1e;
+    padding: 22px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    border: 1px solid #333;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+  }
+  input[type="file"], input[type="number"] {
+    font-size: 19px;
+    padding: 10px;
+    background: #2b2b2b;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 6px;
+  }
+  input[type="number"] { width: 90px; }
+  button {
+    background: #2b78e4;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 8px;
+  }
+  button:hover { background: #1c5bbf; }
+  button.download { background: #28a745; margin-top: 12px; width: 100%; }
+  button.download:hover { background: #1e7e34; }
+  canvas {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #444;
+    border-radius: 6px;
+    background: #000;
+    display: block;
+  }
+  #viewer360 { width: 100%; height: 480px; cursor: grab; }
+  .grid-halves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .grid-halves { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
+<h1>Generador Panorámico y Diagrama 360°</h1>
 
-<div class="tabs">
-  <button class="tab active" onclick="openTab(0)">1. Imágenes</button>
-  <button class="tab" onclick="openTab(1)">2. Salida</button>
-  <button class="tab" onclick="openTab(2)">3. Fusión</button>
-  <button class="tab" onclick="openTab(3)">4. Cámara</button>
-  <button class="tab" onclick="openTab(4)">5. Vista 2D</button>
-  <button class="tab" onclick="openTab(5)">6. Diagrama 360°</button>
-</div>
-<div class="content active">
-  <h3>1. Cargar Fotografías</h3>
-  <input type="file" id="fileInput" multiple accept="image/*"><br><br>
-  <button class="action" onclick="processImages()">Unir Panorámica (Stitch)</button>
-  <p id="status">Selecciona 2 o más fotos secuenciales.</p>
+<div class="panel">
+  <h2>1. Cargar Fotos y Configurar Unión</h2>
+  <div class="controls">
+    <input type="file" id="fileInput" multiple accept="image/*">
+    <label>Solapamiento (%): <input type="number" id="overlap" value="25" min="5" max="50"></label>
+    <label>Calidad (%): <input type="number" id="quality" value="95" min="50" max="100"></label>
+    <button onclick="processImages()">Generar las 3 Panorámicas</button>
+  </div>
+  <p id="status" style="color: #70db70; font-weight: bold;">Selecciona tus fotos secuenciales.</p>
 </div>
 
-<div class="content">
-  <h3>2. Configuración de Salida</h3>
-  <label>Calidad JPEG (%): <input type="number" id="quality" value="90" min="10" max="100"></label>
-</div>
-
-<div class="content">
-  <h3>3. Modo de Fusión</h3>
-  <label>Solapamiento lateral (%): <input type="number" id="overlap" value="20" min="0" max="50"></label>
-</div>
-
-<div class="content">
-  <h3>4. Parámetros de Cámara</h3>
-  <p>Corrección de proyección equirectangular automática activada.</p>
-</div>
-
-<div class="content">
-  <h3>5. Resultado Plano (2D)</h3>
-  <button class="action" onclick="downloadPano()">Descargar Imagen Panorámica</button><br>
-  <canvas id="canvas2d"></canvas>
-</div>
-
-<div class="content">
-  <h3>6. Diagrama Interactivo 360°</h3>
-  <p>Arrastra con el mouse para girar la vista en 360°.</p>
+<div class="panel">
+  <h2>2. Visor Interactivo 360° (Arrastra con el mouse)</h2>
   <canvas id="viewer360"></canvas>
 </div>
+
+<div class="panel">
+  <h2>3. Foto Completa (Todas las fotos unidas)</h2>
+  <canvas id="canvasFull"></canvas>
+  <button class="download" onclick="downloadCanvas('canvasFull', '1_Panoramica_Completa_360.jpg')">
+    Descargar Foto Completa (360°)
+  </button>
+</div>
+
+<div class="grid-halves">
+  <div class="panel">
+    <h2>4. Primera Mitad (0° - 180°)</h2>
+    <canvas id="canvasHalf1"></canvas>
+    <button class="download" onclick="downloadCanvas('canvasHalf1', '2_Panoramica_Mitad_1.jpg')">
+      Descargar Primera Mitad
+    </button>
+  </div>
+
+  <div class="panel">
+    <h2>5. Segunda Mitad (180° - 360°)</h2>
+    <canvas id="canvasHalf2"></canvas>
+    <button class="download" onclick="downloadCanvas('canvasHalf2', '3_Panoramica_Mitad_2.jpg')">
+      Descargar Segunda Mitad
+    </button>
+  </div>
+</div>
 <script>
-let panoCanvas = document.getElementById('canvas2d');
-let v360 = document.getElementById('viewer360');
+const cFull = document.getElementById('canvasFull');
+const cHalf1 = document.getElementById('canvasHalf1');
+const cHalf2 = document.getElementById('canvasHalf2');
+const v360 = document.getElementById('viewer360');
 let yaw = 0, pitch = 0, isDragging = false, lastX = 0, lastY = 0;
 
-function openTab(idx) {
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
-  document.querySelectorAll('.content').forEach((c, i) => c.classList.toggle('active', i === idx));
-  if (idx === 5) render360();
+// Analiza el promedio de color (R, G, B) en una franja de la imagen
+function getRegionColor(ctx, x, y, w, h) {
+  const data = ctx.getImageData(x, y, Math.max(1, w), Math.max(1, h)).data;
+  let r = 0, g = 0, b = 0, count = 0;
+  for (let i = 0; i < data.length; i += 16) {
+    if (data[i + 3] > 200) {
+      r += data[i]; g += data[i + 1]; b += data[i + 2];
+      count++;
+    }
+  }
+  return count ? { r: r / count, g: g / count, b: b / count } : { r: 128, g: 128, b: 128 };
+}
+
+// Ajusta brillo/color de la foto actual para igualarla a la anterior y difumina el borde
+function matchAndBlend(img, width, height, overlapPx, targetColor) {
+  const temp = document.createElement('canvas');
+  temp.width = width;
+  temp.height = height;
+  const tctx = temp.getContext('2d');
+  tctx.drawImage(img, 0, 0, width, height);
+
+  if (targetColor && overlapPx > 0) {
+    const srcColor = getRegionColor(tctx, 0, 0, overlapPx, height);
+    const gainR = Math.min(1.4, Math.max(0.7, targetColor.r / Math.max(1, srcColor.r)));
+    const gainG = Math.min(1.4, Math.max(0.7, targetColor.g / Math.max(1, srcColor.g)));
+    const gainB = Math.min(1.4, Math.max(0.7, targetColor.b / Math.max(1, srcColor.b)));
+
+    const imgData = tctx.getImageData(0, 0, width, height);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i]     = Math.min(255, d[i] * gainR);
+      d[i + 1] = Math.min(255, d[i + 1] * gainG);
+      d[i + 2] = Math.min(255, d[i + 2] * gainB);
+    }
+    tctx.putImageData(imgData, 0, 0);
+
+    // Difuminado suave en el borde izquierdo para camuflar la unión
+    tctx.globalCompositeOperation = 'destination-in';
+    const grad = tctx.createLinearGradient(0, 0, width, 0);
+    const ratio = Math.min(0.45, overlapPx / width);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(ratio, 'rgba(0,0,0,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,1)');
+    tctx.fillStyle = grad;
+    tctx.fillRect(0, 0, width, height);
+  }
+  return temp;
 }
 
 async function processImages() {
   const files = Array.from(document.getElementById('fileInput').files);
   if (files.length < 2) return alert("Selecciona al menos 2 imágenes.");
-  document.getElementById('status').innerText = "Procesando unión...";
+  document.getElementById('status').innerText = "Igualando brillo, color y uniendo fotos...";
 
   const imgs = await Promise.all(files.map(f => new Promise(res => {
     const img = new Image();
@@ -81,48 +178,68 @@ async function processImages() {
   })));
 
   const ov = document.getElementById('overlap').value / 100;
-  const h = 600;
+  const h = 800;
+  const widths = imgs.map(img => Math.round(img.width * (h / img.height)));
   let totalW = 0;
-  const widths = imgs.map(img => (img.width * (h / img.height)));
-  widths.forEach((w, i) => totalW += (i === 0 ? w : w * (1 - ov)));
+  widths.forEach((w, i) => totalW += (i === 0 ? w : Math.round(w * (1 - ov))));
 
-  panoCanvas.width = totalW;
-  panoCanvas.height = h;
-  const ctx = panoCanvas.getContext('2d');
+  cFull.width = totalW;
+  cFull.height = h;
+  const ctx = cFull.getContext('2d');
+  ctx.clearRect(0, 0, totalW, h);
+
   let x = 0;
+  let prevRightColor = null;
 
   imgs.forEach((img, i) => {
     const w = widths[i];
-    ctx.globalAlpha = i === 0 ? 1.0 : 0.85;
-    ctx.drawImage(img, x, 0, w, h);
-    x += w * (1 - ov);
+    const ovPx = i === 0 ? 0 : Math.round(w * ov);
+    const processed = matchAndBlend(img, w, h, ovPx, prevRightColor);
+    ctx.drawImage(processed, x, 0);
+
+    // Guardar el tono del borde derecho ya corregido para igualar la siguiente foto
+    const nextOvPx = Math.max(10, Math.round(w * ov));
+    const pCtx = processed.getContext('2d');
+    prevRightColor = getRegionColor(pCtx, w - nextOvPx, 0, nextOvPx, h);
+
+    x += Math.round(w * (1 - ov));
   });
 
-  document.getElementById('status').innerText = "¡Panorámica lista!";
-  openTab(5);
+  // Generar Primera Mitad y Segunda Mitad
+  const halfW = Math.floor(totalW / 2);
+  cHalf1.width = halfW; cHalf1.height = h;
+  cHalf1.getContext('2d').drawImage(cFull, 0, 0, halfW, h, 0, 0, halfW, h);
+
+  cHalf2.width = totalW - halfW; cHalf2.height = h;
+  cHalf2.getContext('2d').drawImage(cFull, halfW, 0, totalW - halfW, h, 0, 0, totalW - halfW, h);
+
+  document.getElementById('status').innerText = "¡Listo! Brillo igualado y 3 imágenes generadas.";
+  render360();
 }
 
-function downloadPano() {
+function downloadCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas.width) return alert("Primero genera la panorámica.");
   const q = document.getElementById('quality').value / 100;
   const link = document.createElement('a');
-  link.download = 'panoramica_360.jpg';
-  link.href = panoCanvas.toDataURL('image/jpeg', q);
+  link.download = filename;
+  link.href = canvas.toDataURL('image/jpeg', q);
   link.click();
 }
 
 function render360() {
-  if (!panoCanvas.width) return;
+  if (!cFull.width) return;
   v360.width = v360.clientWidth;
   v360.height = v360.clientHeight;
   const ctx = v360.getContext('2d');
-  const scale = v360.height / panoCanvas.height;
-  const drawW = panoCanvas.width * scale;
+  const scale = v360.height / cFull.height;
+  const drawW = cFull.width * scale;
   let offsetX = (yaw % drawW);
   if (offsetX > 0) offsetX -= drawW;
 
   ctx.clearRect(0, 0, v360.width, v360.height);
   for (let x = offsetX; x < v360.width; x += drawW) {
-    ctx.drawImage(panoCanvas, x, pitch, drawW, v360.height);
+    ctx.drawImage(cFull, x, pitch, drawW, v360.height);
   }
 }
 
@@ -131,7 +248,7 @@ window.onmouseup = () => isDragging = false;
 window.onmousemove = e => {
   if (!isDragging) return;
   yaw += (e.clientX - lastX) * 1.2;
-  pitch = Math.max(-100, Math.min(100, pitch + (e.clientY - lastY) * 0.5));
+  pitch = Math.max(-120, Math.min(120, pitch + (e.clientY - lastY) * 0.5));
   lastX = e.clientX; lastY = e.clientY;
   render360();
 };
